@@ -1,4 +1,4 @@
-# 🕹️ psx sample converter
+# 🕹️ psx sample
 
 An audio converter that emulates the Sound Processing Unit of the original Sony Playstation.  
 SPU implementation based on [PlayStation: The SPU](https://jsgroth.dev/blog/posts/ps1-spu-part-1/) articles by jsgroth, and the [psx-spx](https://psx-spx.consoledev.net/soundprocessingunitspu/) documentation.
