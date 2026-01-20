@@ -1,12 +1,1698 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>funkygraf</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PSX Sample Converter</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;a
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #e0e0e0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 30px rgba(255, 107, 107, 0.3);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    .drop-zone {
+      border: 3px dashed #4a5568;
+      border-radius: 16px;
+      padding: 60px 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.02);
+      cursor: pointer;
+      margin-bottom: 24px;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #48dbfb;
+      background: rgba(72, 219, 251, 0.05);
+      transform: scale(1.01);
+    }
+
+    .drop-zone-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+
+    .drop-zone p {
+      color: #a0a0a0;
+    }
+
+    .drop-zone input {
+      display: none;
+    }
+
+    .controls {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .control-group {
+      margin-bottom: 20px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .control-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #48dbfb;
+      font-weight: bold;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      height: 8px;
+      -webkit-appearance: none;
+      background: #2d3748;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: #48dbfb;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(72, 219, 251, 0.5);
+    }
+
+    .value-display {
+      min-width: 80px;
+      text-align: right;
+      color: #feca57;
+      font-weight: bold;
+    }
+
+    select {
+      background: #2d3748;
+      color: #e0e0e0;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+      cursor: pointer;
+      outline: none;
+    }
+
+    select:focus {
+      box-shadow: 0 0 0 2px #48dbfb;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #48dbfb;
+      cursor: pointer;
+    }
+
+    .player {
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      display: none;
+    }
+
+    .player.visible {
+      display: block;
+    }
+
+    .player-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .file-name {
+      color: #ff9ff3;
+      font-size: 0.9rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 70%;
+    }
+
+    .player-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: bold;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+    }
+
+    button.success {
+      background: linear-gradient(135deg, #38a169 0%, #276749 100%);
+    }
+
+    .loop-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 10px 16px;
+      background: #2d3748;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+
+    .loop-toggle:hover {
+      background: #4a5568;
+    }
+
+    .loop-toggle input {
+      display: none;
+    }
+
+    .loop-toggle:has(input:checked) {
+      background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+    }
+
+    .waveform-container {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .waveform-box {
+      flex: 1;
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .waveform-label {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 80px;
+      display: block;
+      border-radius: 4px;
+    }
+
+    .status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      min-height: 44px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .status.visible {
+      opacity: 1;
+    }
+
+    .progress-container {
+      width: 100%;
+      max-width: 400px;
+      margin: 15px auto 0;
+      display: none;
+    }
+
+    .progress-container.visible {
+      display: block;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #2a2a4a;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #48dbfb, #ff9ff3);
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+
+    .progress-text {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #888;
+      margin-top: 8px;
+    }
+
+    .status.processing {
+      background: rgba(72, 219, 251, 0.1);
+      color: #48dbfb;
+    }
+
+    .status.error {
+      background: rgba(255, 107, 107, 0.1);
+      color: #ff6b6b;
+    }
+
+    .status.success {
+      background: rgba(72, 219, 107, 0.1);
+      color: #48db6b;
+    }
+
+    .specs-info {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 24px;
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .specs-info h3 {
+      color: #feca57;
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+
+    .specs-info ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .specs-info li {
+      margin-bottom: 6px;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .specs-info li::before {
+      content: "▸";
+      position: absolute;
+      left: 0;
+      color: #48dbfb;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .processing .status-text {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .comparison-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .toggle-btn {
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      background: #2d3748;
+      border-radius: 6px;
+    }
+
+    .toggle-btn.active {
+      background: linear-gradient(135deg, #48dbfb 0%, #0abde3 100%);
+      color: #1a1a2e;
+    }
+
+    .pitch-presets {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      background: #2d3748;
+      border-radius: 4px;
+      min-width: auto;
+    }
+
+    .preset-btn.active {
+      background: linear-gradient(135deg, #48dbfb 0%, #0abde3 100%);
+      color: #1a1a2e;
+    }
+
+    .preset-btn:hover:not(.active) {
+      background: #4a5568;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>PSX Sample Converter</h1>
+      <p class="subtitle">Transform your audio to sound like the original PlayStation</p>
+    </header>
+
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-zone-icon">🎮</div>
+      <p>Drop audio file(s) here or click to browse</p>
+      <p style="font-size: 0.75rem; color: #666; margin-top: 8px;">Multiple files = batch convert &amp; download</p>
+      <input type="file" id="fileInput" accept="audio/*" multiple>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label>Pre Low-Pass Filter <span style="color: #888; font-size: 0.75rem;">(shape input before encoding)</span></label>
+        <div class="control-row">
+          <input type="range" id="lowpass" min="0" max="100" value="100">
+          <span class="value-display" id="lowpassValue">22000 Hz</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Sample Rate <span style="color: #888; font-size: 0.75rem;">(lower = more Gaussian smoothing)</span></label>
+        <div class="control-row">
+          <select id="sampleRate">
+            <option value="44100">44100 Hz (CD Quality)</option>
+            <option value="22050" selected>22050 Hz (Typical PS1)</option>
+            <option value="11025">11025 Hz (Lo-Fi PS1)</option>
+            <option value="8000">8000 Hz (Extra Crunchy)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Bit Depth Reduction</label>
+        <div class="control-row">
+          <input type="range" id="bitDepth" min="4" max="16" value="16">
+          <span class="value-display" id="bitDepthValue">16-bit</span>
+        </div>
+      </div>
+
+      <div class="control-group" id="pitchGroup">
+        <label>Pitch Ratio</label>
+        <div class="control-row">
+          <input type="range" id="pitchRatio" min="0.25" max="4.0" step="0.01" value="1.0">
+          <span class="value-display" id="pitchRatioValue">1.00x</span>
+        </div>
+        <div class="pitch-presets">
+          <button type="button" class="preset-btn" data-pitch="0.5">0.5x</button>
+          <button type="button" class="preset-btn" data-pitch="0.75">0.75x</button>
+          <button type="button" class="preset-btn active" data-pitch="1.0">1.0x</button>
+          <button type="button" class="preset-btn" data-pitch="1.5">1.5x</button>
+          <button type="button" class="preset-btn" data-pitch="2.0">2.0x</button>
+        </div>
+        <div style="font-size: 0.75rem; color: #666; margin-top: 8px;">
+          Additional pitch shift with authentic Gaussian interpolation. Affects playback speed.
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="mono">
+          <label for="mono" style="margin-bottom: 0; color: #e0e0e0;">Convert to mono</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status">
+      <span class="status-text"></span>
+    </div>
+
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText"></div>
+    </div>
+
+    <div class="player" id="player">
+      <div class="player-header">
+        <span class="file-name" id="fileName">No file loaded</span>
+      </div>
+
+      <div class="waveform-container">
+        <div class="waveform-box">
+          <div class="waveform-label">Original</div>
+          <canvas id="waveformOriginal"></canvas>
+        </div>
+        <div class="waveform-box">
+          <div class="waveform-label">PS1 Processed</div>
+          <canvas id="waveformProcessed"></canvas>
+        </div>
+      </div>
+
+      <div class="comparison-toggle">
+        <button class="toggle-btn active" id="playProcessed">Play PS1</button>
+        <button class="toggle-btn" id="playOriginal">Play Original</button>
+      </div>
+
+      <div class="player-buttons">
+        <button id="playBtn" disabled>▶ Play</button>
+        <button id="stopBtn" class="secondary" disabled>⏹ Stop</button>
+        <label class="loop-toggle">
+          <input type="checkbox" id="loopToggle">
+          <span>🔁 Loop</span>
+        </label>
+        <button id="downloadBtn" class="success" disabled>⬇ Download WAV</button>
+      </div>
+    </div>
+
+    <div class="specs-info">
+      <h3>Signal Chain</h3>
+      <ul>
+        <li><strong>Pre Low-Pass:</strong> Shape the input spectrum before encoding — define what frequencies enter the chain</li>
+        <li><strong>Sample Rate:</strong> Decimate to simulate memory-constrained samples. Lower rates = more Gaussian smoothing on playback</li>
+        <li><strong>ADPCM Codec:</strong> Authentic PS1 SPU compression — 16-bit → 4-bit using shift + filter prediction (always enabled)</li>
+        <li><strong>Bit Depth:</strong> Additional quantization after ADPCM decode (16-bit = no extra reduction)</li>
+        <li><strong>Pitch + Gaussian:</strong> Combined pitch = (sample rate ÷ 44100) × pitch ratio, with SPU pitch counter and 512-entry Gaussian weight table</li>
+      </ul>
+      <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #333; font-size: 0.8rem;">
+        <strong>References:</strong> SPU implementation based on
+        <a href="https://jsgroth.dev/blog/posts/ps1-spu-part-1/" target="_blank" style="color: #48dbfb;">PlayStation: The SPU</a> by jsgroth
+        and <a href="https://psx-spx.consoledev.net/soundprocessingunitspu/" target="_blank" style="color: #48dbfb;">psx-spx</a> documentation.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Audio Context and state
+    let audioContext = null;
+    let originalBuffer = null;
+    let processedBuffer = null;
+    let originalFileName = 'audio'; // Store input filename for download
+    let isPlaying = false;
+    let playbackStartTime = 0;
+    let playbackOffset = 0;
+
+    // Playback nodes
+    let originalSource = null;
+    let processedSource = null;
+    let originalGain = null;
+    let processedGain = null;
+    let isPlayingOriginal = false;
+
+    // DOM Elements
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const status = document.getElementById('status');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const player = document.getElementById('player');
+    const fileName = document.getElementById('fileName');
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const playOriginal = document.getElementById('playOriginal');
+    const playProcessed = document.getElementById('playProcessed');
+    const loopToggle = document.getElementById('loopToggle');
+
+    // Controls
+    const lowpassSlider = document.getElementById('lowpass');
+    const sampleRateSelect = document.getElementById('sampleRate');
+    const bitDepthSlider = document.getElementById('bitDepth');
+    const pitchRatioSlider = document.getElementById('pitchRatio');
+    const monoCheck = document.getElementById('mono');
+    const lowpassValue = document.getElementById('lowpassValue');
+    const bitDepthValue = document.getElementById('bitDepthValue');
+    const pitchRatioValue = document.getElementById('pitchRatioValue');
+
+    // Log scale conversion for LPF: 0-100 slider → 200-22000 Hz
+    const LPF_MIN = 200;
+    const LPF_MAX = 22000;
+    function sliderToFreq(sliderVal) {
+      // 0 → 200 Hz, 100 → 22000 Hz (log scale)
+      const minLog = Math.log10(LPF_MIN);
+      const maxLog = Math.log10(LPF_MAX);
+      const log = minLog + (sliderVal / 100) * (maxLog - minLog);
+      return Math.round(Math.pow(10, log));
+    }
+    function freqToSlider(freq) {
+      const minLog = Math.log10(LPF_MIN);
+      const maxLog = Math.log10(LPF_MAX);
+      const log = Math.log10(freq);
+      return ((log - minLog) / (maxLog - minLog)) * 100;
+    }
+
+    // PS1 SPU Gaussian interpolation table (512 entries)
+    // From psx-spx documentation
+    const GAUSSIAN_TABLE = [
+      -0x001, -0x001, -0x001, -0x001, -0x001, -0x001, -0x001, -0x001,
+      -0x001, -0x001, -0x001, -0x001, -0x001, -0x001, -0x001, -0x001,
+      0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0001,
+      0x0001, 0x0001, 0x0001, 0x0002, 0x0002, 0x0002, 0x0003, 0x0003,
+      0x0003, 0x0004, 0x0004, 0x0005, 0x0005, 0x0006, 0x0007, 0x0007,
+      0x0008, 0x0009, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E,
+      0x000F, 0x0010, 0x0011, 0x0012, 0x0013, 0x0015, 0x0016, 0x0018,
+      0x0019, 0x001B, 0x001C, 0x001E, 0x0020, 0x0021, 0x0023, 0x0025,
+      0x0027, 0x0029, 0x002C, 0x002E, 0x0030, 0x0033, 0x0035, 0x0038,
+      0x003A, 0x003D, 0x0040, 0x0043, 0x0046, 0x0049, 0x004D, 0x0050,
+      0x0054, 0x0057, 0x005B, 0x005F, 0x0063, 0x0067, 0x006B, 0x006F,
+      0x0074, 0x0078, 0x007D, 0x0082, 0x0087, 0x008C, 0x0091, 0x0096,
+      0x009C, 0x00A1, 0x00A7, 0x00AD, 0x00B3, 0x00BA, 0x00C0, 0x00C7,
+      0x00CD, 0x00D4, 0x00DB, 0x00E3, 0x00EA, 0x00F2, 0x00FA, 0x0101,
+      0x010A, 0x0112, 0x011B, 0x0123, 0x012C, 0x0135, 0x013F, 0x0148,
+      0x0152, 0x015C, 0x0166, 0x0171, 0x017B, 0x0186, 0x0191, 0x019C,
+      0x01A8, 0x01B4, 0x01C0, 0x01CC, 0x01D9, 0x01E5, 0x01F2, 0x0200,
+      0x020D, 0x021B, 0x0229, 0x0237, 0x0246, 0x0255, 0x0264, 0x0273,
+      0x0283, 0x0293, 0x02A3, 0x02B4, 0x02C4, 0x02D6, 0x02E7, 0x02F9,
+      0x030B, 0x031D, 0x0330, 0x0343, 0x0356, 0x036A, 0x037E, 0x0392,
+      0x03A7, 0x03BC, 0x03D1, 0x03E7, 0x03FC, 0x0413, 0x0429, 0x0440,
+      0x0458, 0x046F, 0x0487, 0x049F, 0x04B8, 0x04D1, 0x04EB, 0x0505,
+      0x051F, 0x053A, 0x0555, 0x0570, 0x058C, 0x05A8, 0x05C4, 0x05E1,
+      0x05FE, 0x061C, 0x063A, 0x0658, 0x0676, 0x0695, 0x06B4, 0x06D4,
+      0x06F4, 0x0714, 0x0735, 0x0756, 0x0777, 0x0799, 0x07BB, 0x07DD,
+      0x0800, 0x0823, 0x0846, 0x086A, 0x088E, 0x08B2, 0x08D7, 0x08FC,
+      0x0922, 0x0948, 0x096E, 0x0994, 0x09BB, 0x09E2, 0x0A0A, 0x0A32,
+      0x0A5A, 0x0A83, 0x0AAC, 0x0AD6, 0x0AFF, 0x0B29, 0x0B54, 0x0B7F,
+      0x0BAA, 0x0BD6, 0x0C02, 0x0C2E, 0x0C5B, 0x0C88, 0x0CB5, 0x0CE3,
+      0x0D11, 0x0D40, 0x0D6F, 0x0D9E, 0x0DCE, 0x0DFD, 0x0E2E, 0x0E5E,
+      0x0E8F, 0x0EC0, 0x0EF2, 0x0F24, 0x0F56, 0x0F89, 0x0FBC, 0x0FEF,
+      0x1022, 0x1056, 0x108A, 0x10BE, 0x10F3, 0x1128, 0x115D, 0x1193,
+      0x11C9, 0x11FF, 0x1236, 0x126D, 0x12A4, 0x12DB, 0x1313, 0x134B,
+      0x1383, 0x13BC, 0x13F5, 0x142E, 0x1468, 0x14A2, 0x14DC, 0x1516,
+      0x1551, 0x158C, 0x15C7, 0x1603, 0x163F, 0x167B, 0x16B8, 0x16F5,
+      0x1732, 0x176F, 0x17AD, 0x17EB, 0x1829, 0x1868, 0x18A7, 0x18E6,
+      0x1926, 0x1965, 0x19A5, 0x19E5, 0x1A26, 0x1A66, 0x1AA7, 0x1AE8,
+      0x1B2A, 0x1B6C, 0x1BAE, 0x1BF0, 0x1C33, 0x1C76, 0x1CB9, 0x1CFC,
+      0x1D40, 0x1D84, 0x1DC8, 0x1E0C, 0x1E51, 0x1E96, 0x1EDB, 0x1F20,
+      0x1F66, 0x1FAC, 0x1FF2, 0x2038, 0x207F, 0x20C6, 0x210D, 0x2154,
+      0x219B, 0x21E3, 0x222B, 0x2273, 0x22BC, 0x2305, 0x234D, 0x2397,
+      0x23E0, 0x242A, 0x2474, 0x24BE, 0x2508, 0x2553, 0x259E, 0x25E9,
+      0x2634, 0x2680, 0x26CC, 0x2718, 0x2764, 0x27B0, 0x27FD, 0x284A,
+      0x2897, 0x28E5, 0x2932, 0x2980, 0x29CE, 0x2A1C, 0x2A6B, 0x2ABA,
+      0x2B09, 0x2B58, 0x2BA7, 0x2BF7, 0x2C47, 0x2C97, 0x2CE7, 0x2D38,
+      0x2D88, 0x2DD9, 0x2E2A, 0x2E7C, 0x2ECD, 0x2F1F, 0x2F71, 0x2FC3,
+      0x3015, 0x3068, 0x30BB, 0x310E, 0x3161, 0x31B4, 0x3207, 0x325B,
+      0x32AF, 0x3303, 0x3357, 0x33AC, 0x3401, 0x3456, 0x34AB, 0x3500,
+      0x3556, 0x35AC, 0x3602, 0x3658, 0x36AE, 0x3704, 0x375B, 0x37B2,
+      0x3809, 0x3860, 0x38B7, 0x390F, 0x3967, 0x39BF, 0x3A17, 0x3A70,
+      0x3AC8, 0x3B21, 0x3B7A, 0x3BD3, 0x3C2C, 0x3C86, 0x3CE0, 0x3D3A,
+      0x3D94, 0x3DEE, 0x3E48, 0x3EA3, 0x3EFE, 0x3F59, 0x3FB4, 0x400F,
+      0x406B, 0x40C6, 0x4122, 0x417E, 0x41DA, 0x4236, 0x4292, 0x42EF,
+      0x434C, 0x43A9, 0x4406, 0x4463, 0x44C0, 0x451E, 0x457C, 0x45DA,
+      0x4638, 0x4696, 0x46F5, 0x4754, 0x47B3, 0x4812, 0x4871, 0x48D0,
+      0x4930, 0x4990, 0x49F0, 0x4A50, 0x4AB0, 0x4B10, 0x4B71, 0x4BD2,
+      0x4C33, 0x4C94, 0x4CF5, 0x4D57, 0x4DB9, 0x4E1B, 0x4E7D, 0x4EDF,
+      0x4F42, 0x4FA5, 0x5008, 0x506B, 0x50CE, 0x5131, 0x5195, 0x51F9,
+      0x525D, 0x52C1, 0x5325, 0x538A, 0x53EF, 0x5453, 0x54B9, 0x551E,
+      0x5584, 0x55EA, 0x5650, 0x56B6, 0x571C, 0x5782, 0x57E9, 0x5850,
+      0x58B7, 0x591E, 0x5986, 0x59ED, 0x5A55, 0x5ABD, 0x5B26, 0x5B8E,
+      0x5BF7, 0x5C60, 0x5CC9, 0x5D32, 0x5D9B, 0x5E05, 0x5E6F, 0x5ED9,
+      0x5F43, 0x5FAD, 0x6018, 0x6082, 0x60ED, 0x6158, 0x61C4, 0x622F,
+      0x629B, 0x6307, 0x6373, 0x63DF, 0x644C, 0x64B8, 0x6525, 0x6592,
+    ];
+
+    // ADPCM filter coefficients (multiplied by 64 for integer math)
+    const ADPCM_FILTERS = [
+      [0, 0],      // Filter 0: no filtering
+      [60, 0],     // Filter 1: 60/64 * old
+      [115, -52],  // Filter 2: 115/64 * old - 52/64 * older
+      [98, -55],   // Filter 3: 98/64 * old - 55/64 * older
+      [122, -60],  // Filter 4: 122/64 * old - 60/64 * older
+    ];
+
+    // Initialize AudioContext on first interaction
+    function initAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioContext;
+    }
+
+    // Pre low-pass filter (log scale)
+    lowpassSlider.addEventListener('input', () => {
+      const freq = sliderToFreq(parseFloat(lowpassSlider.value));
+      lowpassValue.textContent = freq + ' Hz';
+    });
+    lowpassSlider.addEventListener('change', () => {
+      if (originalBuffer) processAudio();
+    });
+
+    // Bit depth
+    bitDepthSlider.addEventListener('input', () => {
+      bitDepthValue.textContent = `${bitDepthSlider.value}-bit`;
+    });
+    bitDepthSlider.addEventListener('change', () => {
+      if (originalBuffer) processAudio();
+    });
+
+    sampleRateSelect.addEventListener('change', () => {
+      if (originalBuffer) processAudio();
+    });
+
+    pitchRatioSlider.addEventListener('input', () => {
+      const val = parseFloat(pitchRatioSlider.value);
+      pitchRatioValue.textContent = val.toFixed(2) + 'x';
+      updatePitchPresetButtons(val);
+    });
+    pitchRatioSlider.addEventListener('change', () => {
+      if (originalBuffer) processAudio();
+    });
+
+    // Pitch preset buttons
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pitch = parseFloat(btn.dataset.pitch);
+        pitchRatioSlider.value = pitch;
+        pitchRatioValue.textContent = pitch.toFixed(2) + 'x';
+        updatePitchPresetButtons(pitch);
+        if (originalBuffer) processAudio();
+      });
+    });
+
+    function updatePitchPresetButtons(val) {
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        const btnPitch = parseFloat(btn.dataset.pitch);
+        btn.classList.toggle('active', Math.abs(btnPitch - val) < 0.01);
+      });
+    }
+
+    monoCheck.addEventListener('change', () => {
+      if (originalBuffer) processAudio();
+    });
+
+    // Drag and drop handlers
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('audio/'));
+      if (files.length === 0) {
+        showStatus('Please drop audio file(s)', 'error');
+      } else if (files.length === 1) {
+        handleFile(files[0]);
+      } else {
+        handleBatchFiles(files);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length === 1) {
+        handleFile(files[0]);
+      } else if (files.length > 1) {
+        handleBatchFiles(files);
+      }
+      // Reset input so same files can be selected again
+      e.target.value = '';
+    });
+
+    // Handle file loading
+    async function handleFile(file) {
+      showStatus('Loading audio file...', 'processing');
+      stopPlayback();
+
+      try {
+        initAudioContext();
+        const arrayBuffer = await file.arrayBuffer();
+        originalBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+        // Store filename without extension for download naming
+        originalFileName = file.name.replace(/\.[^/.]+$/, '');
+
+        fileName.textContent = file.name;
+        player.classList.add('visible');
+
+        drawWaveform(originalBuffer, document.getElementById('waveformOriginal'), '#48dbfb');
+
+        await processAudio();
+
+        playBtn.disabled = false;
+        stopBtn.disabled = false;
+        downloadBtn.disabled = false;
+
+        showStatus('Audio loaded and processed!', 'success');
+        setTimeout(() => hideStatus(), 2000);
+      } catch (err) {
+        console.error(err);
+        showStatus('Error loading audio file: ' + err.message, 'error');
+      }
+    }
+
+    // Handle batch file processing
+    async function handleBatchFiles(files) {
+      initAudioContext();
+
+      // Load JSZip if not already loaded
+      if (!window.JSZip) {
+        showStatus('Loading ZIP library...', 'processing');
+        await loadJSZip();
+      }
+
+      const total = files.length;
+      let processed = 0;
+      let failed = 0;
+
+      const zip = new JSZip();
+
+      showStatus('Batch processing...', 'processing');
+      showProgress(0, total, `Processing 0 / ${total}`);
+
+      for (const file of files) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const inputBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          const inputFileName = file.name.replace(/\.[^/.]+$/, '');
+
+          // Process with current settings
+          const outputBuffer = await processAudioBuffer(inputBuffer);
+
+          // Generate filename and add to zip
+          const downloadName = generateDownloadName(inputFileName);
+          const wav = audioBufferToWav(outputBuffer);
+          zip.file(downloadName, wav);
+
+          processed++;
+          showProgress(processed, total, `Processing ${processed} / ${total}`);
+
+        } catch (err) {
+          console.error('Failed to process:', file.name, err);
+          failed++;
+        }
+      }
+
+      // Generate and download zip
+      showProgress(total, total, 'Creating ZIP file...');
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ps1_batch_${processed}files.zip`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      hideProgress();
+
+      if (failed === 0) {
+        showStatus(`Batch complete! ${processed} files in ZIP.`, 'success');
+      } else {
+        showStatus(`Batch complete: ${processed} converted, ${failed} failed.`, 'error');
+      }
+      setTimeout(() => hideStatus(), 3000);
+    }
+
+    // Load JSZip library dynamically
+    function loadJSZip() {
+      return new Promise((resolve, reject) => {
+        if (window.JSZip) {
+          resolve();
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load JSZip'));
+        document.head.appendChild(script);
+      });
+    }
+
+    // Process an audio buffer with current settings (reusable for batch)
+    async function processAudioBuffer(inputBuffer) {
+      // Get all parameters
+      const preLowpassFreq = sliderToFreq(parseFloat(lowpassSlider.value));
+      const targetSampleRate = parseInt(sampleRateSelect.value);
+      const bitDepth = parseInt(bitDepthSlider.value);
+      const pitchRatio = parseFloat(pitchRatioSlider.value);
+      const convertMono = monoCheck.checked;
+
+      // SPU always outputs at 44100 Hz
+      const OUTPUT_RATE = 44100;
+
+      const nativePitch = targetSampleRate / OUTPUT_RATE;
+      const combinedPitch = nativePitch * pitchRatio;
+
+      const numChannels = convertMono ? 1 : inputBuffer.numberOfChannels;
+      const duration = inputBuffer.duration;
+      const decimatedLength = Math.ceil(duration * targetSampleRate);
+      const resampleRatio = inputBuffer.sampleRate / targetSampleRate;
+      const outputLength = Math.floor((duration * OUTPUT_RATE) / pitchRatio);
+
+      // Step 1: Apply pre-LPF
+      let preLpfBuffer = inputBuffer;
+      if (preLowpassFreq < 22000) {
+        const preLpfCtx = new OfflineAudioContext(
+          inputBuffer.numberOfChannels,
+          inputBuffer.length,
+          inputBuffer.sampleRate
+        );
+        const source = preLpfCtx.createBufferSource();
+        source.buffer = inputBuffer;
+
+        const lpf = preLpfCtx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.value = preLowpassFreq;
+        lpf.Q.value = 0.707;
+
+        source.connect(lpf);
+        lpf.connect(preLpfCtx.destination);
+        source.start();
+
+        preLpfBuffer = await preLpfCtx.startRendering();
+      }
+
+      // Get pre-filtered data
+      const filteredData = [];
+      for (let ch = 0; ch < preLpfBuffer.numberOfChannels; ch++) {
+        filteredData.push(preLpfBuffer.getChannelData(ch));
+      }
+
+      // Create output buffer
+      const outputBuffer = new AudioBuffer({
+        numberOfChannels: numChannels,
+        length: outputLength,
+        sampleRate: OUTPUT_RATE
+      });
+
+      for (let ch = 0; ch < numChannels; ch++) {
+        const input = convertMono && preLpfBuffer.numberOfChannels > 1
+          ? mixToMono(filteredData)
+          : filteredData[Math.min(ch, filteredData.length - 1)];
+
+        // Step 2: Decimate to target sample rate
+        const decimated = new Float32Array(decimatedLength);
+        for (let i = 0; i < decimatedLength; i++) {
+          const srcIndex = i * resampleRatio;
+          const srcIndexFloor = Math.floor(srcIndex);
+          const srcIndexCeil = Math.min(srcIndexFloor + 1, input.length - 1);
+          const frac = srcIndex - srcIndexFloor;
+          decimated[i] = input[srcIndexFloor] * (1 - frac) + input[srcIndexCeil] * frac;
+        }
+
+        // Step 3: ADPCM encode/decode
+        const afterAdpcm = adpcmRoundTrip(decimated);
+
+        // Step 4: Bit depth reduction
+        if (bitDepth < 16) {
+          const levels = Math.pow(2, bitDepth);
+          for (let i = 0; i < afterAdpcm.length; i++) {
+            afterAdpcm[i] = Math.round(afterAdpcm[i] * levels) / levels;
+          }
+        }
+
+        // Step 5: Gaussian interpolation
+        const afterGaussian = applyGaussianInterpolation(afterAdpcm, combinedPitch);
+
+        // Copy to output buffer
+        const output = outputBuffer.getChannelData(ch);
+        for (let i = 0; i < outputLength; i++) {
+          output[i] = Math.max(-1, Math.min(1, afterGaussian[i] || 0));
+        }
+      }
+
+      return outputBuffer;
+    }
+
+    // Generate download filename based on current settings
+    function generateDownloadName(baseName) {
+      const sampleRate = parseInt(sampleRateSelect.value);
+      const lpfFreq = sliderToFreq(parseFloat(lowpassSlider.value));
+      const pitch = parseFloat(pitchRatioSlider.value);
+      const bitDepth = parseInt(bitDepthSlider.value);
+      const isMono = monoCheck.checked;
+
+      let downloadName = baseName + '_ps1';
+      downloadName += '_' + (sampleRate >= 1000 ? Math.round(sampleRate/1000) + 'k' : sampleRate);
+      if (lpfFreq < 22000) {
+        downloadName += '_lpf' + (lpfFreq >= 1000 ? Math.round(lpfFreq/1000) + 'k' : lpfFreq);
+      }
+      if (bitDepth < 16) {
+        downloadName += '_' + bitDepth + 'b';
+      }
+      if (Math.abs(pitch - 1.0) > 0.01) {
+        downloadName += '_p' + pitch.toFixed(2).replace(/\.?0+$/, '');
+      }
+      if (isMono) {
+        downloadName += '_mono';
+      }
+      downloadName += '.wav';
+
+      return downloadName;
+    }
+
+    // Download a buffer as WAV
+    function downloadWav(buffer, filename) {
+      const wav = audioBufferToWav(buffer);
+      const blob = new Blob([wav], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // ========== PS1 SPU ADPCM CODEC ==========
+
+    // Decode a single ADPCM block (16 bytes -> 28 samples)
+    function decodeAdpcmBlock(block, oldSample, olderSample) {
+      const decoded = new Int16Array(28);
+
+      // First byte: shift (bits 0-3) and filter (bits 4-6)
+      let shift = block[0] & 0x0F;
+      if (shift > 12) shift = 9; // Invalid shift values behave as 9
+      const filter = Math.min(4, (block[0] >> 4) & 0x07);
+
+      const [filterPos, filterNeg] = ADPCM_FILTERS[filter];
+
+      let old = oldSample;
+      let older = olderSample;
+
+      // Decode 28 samples from 14 bytes (2 samples per byte)
+      for (let i = 0; i < 28; i++) {
+        const sampleByte = block[2 + Math.floor(i / 2)];
+        // Samples are little-endian within byte (low nibble first)
+        const nibble = (i % 2 === 0) ? (sampleByte & 0x0F) : ((sampleByte >> 4) & 0x0F);
+
+        // Sign extend from 4 bits to 32 bits
+        const signedNibble = (nibble >= 8) ? (nibble - 16) : nibble;
+
+        // Apply shift: shift value N means shift left by (12 - N)
+        const shifted = signedNibble << (12 - shift);
+
+        // Apply filter
+        const filtered = shifted + Math.floor((filterPos * old + filterNeg * older + 32) / 64);
+
+        // Clamp to signed 16-bit
+        const clamped = Math.max(-0x8000, Math.min(0x7FFF, filtered));
+        decoded[i] = clamped;
+
+        // Update history
+        older = old;
+        old = clamped;
+      }
+
+      return { decoded, oldSample: old, olderSample: older };
+    }
+
+    // Encode a block of up to 28 samples into ADPCM format
+    function encodeAdpcmBlock(samples, oldSample, olderSample) {
+      const block = new Uint8Array(16);
+
+      // Try all combinations of shift and filter to find best match
+      let bestError = Infinity;
+      let bestShift = 0;
+      let bestFilter = 0;
+      let bestNibbles = new Int8Array(28);
+      let bestOld = oldSample;
+      let bestOlder = olderSample;
+
+      for (let shift = 0; shift <= 12; shift++) {
+        for (let filter = 0; filter <= 4; filter++) {
+          const [filterPos, filterNeg] = ADPCM_FILTERS[filter];
+
+          let old = oldSample;
+          let older = olderSample;
+          let totalError = 0;
+          const nibbles = new Int8Array(28);
+
+          for (let i = 0; i < samples.length; i++) {
+            const target = samples[i];
+
+            // Calculate predicted value from filter
+            const predicted = Math.floor((filterPos * old + filterNeg * older + 32) / 64);
+
+            // Calculate what we need to encode (target - predicted), then apply inverse shift
+            const diff = target - predicted;
+            const scaledDiff = diff >> (12 - shift);
+
+            // Clamp to 4-bit signed range (-8 to 7)
+            const nibble = Math.max(-8, Math.min(7, scaledDiff));
+            nibbles[i] = nibble;
+
+            // Decode to get actual output value
+            const shifted = nibble << (12 - shift);
+            const filtered = shifted + predicted;
+            const decoded = Math.max(-0x8000, Math.min(0x7FFF, filtered));
+
+            // Accumulate error
+            const error = Math.abs(target - decoded);
+            totalError += error;
+
+            // Update history for next sample
+            older = old;
+            old = decoded;
+          }
+
+          if (totalError < bestError) {
+            bestError = totalError;
+            bestShift = shift;
+            bestFilter = filter;
+            bestNibbles = nibbles.slice();
+            bestOld = old;
+            bestOlder = older;
+          }
+        }
+      }
+
+      // Build the block
+      block[0] = (bestFilter << 4) | bestShift;
+      block[1] = 0; // Loop flags (not used for our purposes)
+
+      // Pack nibbles into bytes (little-endian within byte)
+      for (let i = 0; i < 28; i += 2) {
+        const lo = bestNibbles[i] & 0x0F;
+        const hi = (i + 1 < 28) ? (bestNibbles[i + 1] & 0x0F) : 0;
+        block[2 + i / 2] = lo | (hi << 4);
+      }
+
+      return { block, oldSample: bestOld, olderSample: bestOlder };
+    }
+
+    // Full ADPCM encode then decode (simulates round-trip through SPU)
+    function adpcmRoundTrip(pcmSamples) {
+      const output = new Float32Array(pcmSamples.length);
+
+      let encodeOld = 0, encodeOlder = 0;
+      let decodeOld = 0, decodeOlder = 0;
+
+      // Process in 28-sample blocks
+      for (let blockStart = 0; blockStart < pcmSamples.length; blockStart += 28) {
+        const blockEnd = Math.min(blockStart + 28, pcmSamples.length);
+        const blockLen = blockEnd - blockStart;
+
+        // Convert float samples to 16-bit integers for encoding
+        const int16Block = new Int16Array(blockLen);
+        for (let i = 0; i < blockLen; i++) {
+          int16Block[i] = Math.round(pcmSamples[blockStart + i] * 0x7FFF);
+        }
+
+        // Encode
+        const { block, oldSample: newEncOld, olderSample: newEncOlder } =
+          encodeAdpcmBlock(int16Block, encodeOld, encodeOlder);
+        encodeOld = newEncOld;
+        encodeOlder = newEncOlder;
+
+        // Decode
+        const { decoded, oldSample: newDecOld, olderSample: newDecOlder } =
+          decodeAdpcmBlock(block, decodeOld, decodeOlder);
+        decodeOld = newDecOld;
+        decodeOlder = newDecOlder;
+
+        // Convert back to float
+        for (let i = 0; i < blockLen; i++) {
+          output[blockStart + i] = decoded[i] / 0x7FFF;
+        }
+      }
+
+      return output;
+    }
+
+    // Apply Gaussian interpolation simulating actual SPU pitch counter behavior
+    function applyGaussianInterpolation(samples, pitchRatio) {
+      // Pitch value in SPU terms: 0x1000 = 1.0x, 0x0800 = 0.5x, 0x2000 = 2.0x
+      // Clamped to hardware max of 0x4000 (4.0x)
+      const pitchStep = Math.min(0x4000, Math.round(pitchRatio * 0x1000));
+
+      // Calculate output length based on pitch ratio
+      // pitch > 1.0 = fewer output samples (faster playback)
+      // pitch < 1.0 = more output samples (slower playback)
+      const outputLength = Math.floor(samples.length / pitchRatio);
+      const output = new Float32Array(outputLength);
+
+      // Ring buffer for last 4 decoded samples (for interpolation)
+      // [oldest, older, old, current]
+      const history = [0, 0, 0, 0];
+
+      // Pitch counter (16-bit, but we use 32-bit for easier math)
+      let pitchCounter = 0;
+      let sampleIndex = 0;
+
+      // Prime the history buffer with first few samples
+      for (let i = 0; i < Math.min(4, samples.length); i++) {
+        history[i] = Math.round(samples[i] * 0x7FFF);
+      }
+      sampleIndex = 3;
+
+      for (let outIdx = 0; outIdx < outputLength; outIdx++) {
+        // Increment pitch counter
+        pitchCounter += pitchStep;
+
+        // Check if we need to advance to next sample(s)
+        // Bits 12-15 overflow means advance
+        while (pitchCounter >= 0x1000) {
+          pitchCounter -= 0x1000;
+          sampleIndex++;
+
+          // Shift history buffer
+          history[0] = history[1];
+          history[1] = history[2];
+          history[2] = history[3];
+
+          // Load next sample (or 0 if past end)
+          if (sampleIndex < samples.length) {
+            history[3] = Math.round(samples[sampleIndex] * 0x7FFF);
+          } else {
+            history[3] = 0;
+          }
+        }
+
+        // Bits 4-11 of pitch counter = interpolation index (0-255)
+        const interpIdx = (pitchCounter >> 4) & 0xFF;
+
+        // Apply Gaussian interpolation formula from psx-spx
+        // The four table lookups blend oldest→current samples
+        let interp = (GAUSSIAN_TABLE[0x0FF - interpIdx] * history[0]) >> 15;
+        interp += (GAUSSIAN_TABLE[0x1FF - interpIdx] * history[1]) >> 15;
+        interp += (GAUSSIAN_TABLE[0x100 + interpIdx] * history[2]) >> 15;
+        interp += (GAUSSIAN_TABLE[interpIdx] * history[3]) >> 15;
+
+        // Clamp and convert back to float
+        output[outIdx] = Math.max(-1, Math.min(1, interp / 0x7FFF));
+      }
+
+      return output;
+    }
+
+    // ========== END PS1 SPU CODEC ==========
+
+    // Process audio with PS1 effects
+    // Chain: Pre-LPF → Decimate → ADPCM → Bit Depth → Gaussian (native + pitch)
+    async function processAudio() {
+      if (!originalBuffer) return;
+
+      const wasPlaying = isPlaying;
+      if (wasPlaying) stopPlayback();
+
+      showStatus('Processing audio...', 'processing');
+
+      // Get all parameters
+      const preLowpassFreq = sliderToFreq(parseFloat(lowpassSlider.value));
+      const targetSampleRate = parseInt(sampleRateSelect.value);
+      const bitDepth = parseInt(bitDepthSlider.value);
+      const pitchRatio = parseFloat(pitchRatioSlider.value);
+      const convertMono = monoCheck.checked;
+
+      // SPU always outputs at 44100 Hz
+      const OUTPUT_RATE = 44100;
+
+      // Combined pitch: native sample rate pitch × user pitch ratio
+      // e.g., 22050 Hz sample at 1.5x pitch = 0.5 × 1.5 = 0.75x total
+      const nativePitch = targetSampleRate / OUTPUT_RATE;
+      const combinedPitch = nativePitch * pitchRatio;
+
+      // Get original audio data
+      const originalData = [];
+      for (let ch = 0; ch < originalBuffer.numberOfChannels; ch++) {
+        originalData.push(originalBuffer.getChannelData(ch));
+      }
+
+      const numChannels = convertMono ? 1 : originalBuffer.numberOfChannels;
+      const duration = originalBuffer.duration;
+
+      // Calculate lengths
+      const inputLength = originalBuffer.length;
+      const decimatedLength = Math.ceil(duration * targetSampleRate);
+      const resampleRatio = originalBuffer.sampleRate / targetSampleRate;
+
+      // Final output length depends on combined pitch
+      // combinedPitch < 1 = longer output, combinedPitch > 1 = shorter output
+      const outputLength = Math.floor((duration * OUTPUT_RATE) / pitchRatio);
+
+      // Step 1: Apply pre-LPF to original buffer using OfflineAudioContext
+      let preLpfBuffer = originalBuffer;
+      if (preLowpassFreq < 22000) {
+        const preLpfCtx = new OfflineAudioContext(
+          originalBuffer.numberOfChannels,
+          originalBuffer.length,
+          originalBuffer.sampleRate
+        );
+        const source = preLpfCtx.createBufferSource();
+        source.buffer = originalBuffer;
+
+        const lpf = preLpfCtx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.value = preLowpassFreq;
+        lpf.Q.value = 0.707;
+
+        source.connect(lpf);
+        lpf.connect(preLpfCtx.destination);
+        source.start();
+
+        preLpfBuffer = await preLpfCtx.startRendering();
+      }
+
+      // Get pre-filtered data
+      const filteredData = [];
+      for (let ch = 0; ch < preLpfBuffer.numberOfChannels; ch++) {
+        filteredData.push(preLpfBuffer.getChannelData(ch));
+      }
+
+      // Create output buffer
+      processedBuffer = new AudioBuffer({
+        numberOfChannels: numChannels,
+        length: outputLength,
+        sampleRate: OUTPUT_RATE
+      });
+
+      for (let ch = 0; ch < numChannels; ch++) {
+        const input = convertMono && preLpfBuffer.numberOfChannels > 1
+          ? mixToMono(filteredData)
+          : filteredData[Math.min(ch, filteredData.length - 1)];
+
+        // Step 2: Decimate to target sample rate
+        const decimated = new Float32Array(decimatedLength);
+        for (let i = 0; i < decimatedLength; i++) {
+          const srcIndex = i * resampleRatio;
+          const srcIndexFloor = Math.floor(srcIndex);
+          const srcIndexCeil = Math.min(srcIndexFloor + 1, input.length - 1);
+          const frac = srcIndex - srcIndexFloor;
+          decimated[i] = input[srcIndexFloor] * (1 - frac) + input[srcIndexCeil] * frac;
+        }
+
+        // Step 3: ADPCM encode/decode
+        const afterAdpcm = adpcmRoundTrip(decimated);
+
+        // Step 4: Bit depth reduction
+        if (bitDepth < 16) {
+          const levels = Math.pow(2, bitDepth);
+          for (let i = 0; i < afterAdpcm.length; i++) {
+            afterAdpcm[i] = Math.round(afterAdpcm[i] * levels) / levels;
+          }
+        }
+
+        // Step 5: Gaussian interpolation to output rate using combined pitch
+        const afterGaussian = applyGaussianInterpolation(afterAdpcm, combinedPitch);
+
+        // Copy to output buffer
+        const output = processedBuffer.getChannelData(ch);
+        for (let i = 0; i < outputLength; i++) {
+          output[i] = Math.max(-1, Math.min(1, afterGaussian[i] || 0));
+        }
+      }
+
+      drawWaveform(processedBuffer, document.getElementById('waveformProcessed'), '#ff9ff3');
+
+      showStatus('Processing complete!', 'success');
+      setTimeout(() => hideStatus(), 1500);
+
+      // Resume playback if it was playing
+      if (wasPlaying) {
+        playAudio(0);
+      }
+    }
+
+    // Mix stereo to mono
+    function mixToMono(channels) {
+      const length = channels[0].length;
+      const mono = new Float32Array(length);
+      for (let i = 0; i < length; i++) {
+        let sum = 0;
+        for (let ch = 0; ch < channels.length; ch++) {
+          sum += channels[ch][i];
+        }
+        mono[i] = sum / channels.length;
+      }
+      return mono;
+    }
+
+    // Draw waveform visualization
+    function drawWaveform(buffer, canvas, color) {
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width = canvas.offsetWidth * 2;
+      const height = canvas.height = canvas.offsetHeight * 2;
+
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, width, height);
+
+      const data = buffer.getChannelData(0);
+      const step = Math.ceil(data.length / width);
+      const amp = height / 2;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+
+      for (let i = 0; i < width; i++) {
+        let min = 1.0;
+        let max = -1.0;
+
+        for (let j = 0; j < step; j++) {
+          const datum = data[(i * step) + j];
+          if (datum < min) min = datum;
+          if (datum > max) max = datum;
+        }
+
+        ctx.moveTo(i, (1 + min) * amp);
+        ctx.lineTo(i, (1 + max) * amp);
+      }
+
+      ctx.stroke();
+    }
+
+    // Get current playback position in seconds
+    function getCurrentPlaybackPosition() {
+      if (!isPlaying) return playbackOffset;
+      return (audioContext.currentTime - playbackStartTime) + playbackOffset;
+    }
+
+    // Toggle between original and processed - instant swap!
+    playOriginal.addEventListener('click', () => {
+      if (isPlayingOriginal) return;
+      isPlayingOriginal = true;
+      playOriginal.classList.add('active');
+      playProcessed.classList.remove('active');
+      updateGains();
+    });
+
+    playProcessed.addEventListener('click', () => {
+      if (!isPlayingOriginal) return;
+      isPlayingOriginal = false;
+      playProcessed.classList.add('active');
+      playOriginal.classList.remove('active');
+      updateGains();
+    });
+
+    // Smoothly crossfade between sources
+    function updateGains() {
+      if (!originalGain || !processedGain) return;
+      const now = audioContext.currentTime;
+      const fadeTime = 0.015; // 15ms crossfade for smooth switching
+
+      if (isPlayingOriginal) {
+        originalGain.gain.setTargetAtTime(1, now, fadeTime);
+        processedGain.gain.setTargetAtTime(0, now, fadeTime);
+      } else {
+        originalGain.gain.setTargetAtTime(0, now, fadeTime);
+        processedGain.gain.setTargetAtTime(1, now, fadeTime);
+      }
+    }
+
+    // Playback controls
+    playBtn.addEventListener('click', () => {
+      if (isPlaying) {
+        stopPlayback();
+      } else {
+        playAudio(playbackOffset);
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      stopPlayback();
+      playbackOffset = 0;
+    });
+
+    // Update loop setting during playback
+    loopToggle.addEventListener('change', () => {
+      if (isPlaying) {
+        const currentPos = getCurrentPlaybackPosition();
+        stopPlayback();
+        playAudio(currentPos);
+      }
+    });
+
+    function playAudio(startOffset = 0) {
+      if (!originalBuffer || !processedBuffer) return;
+
+      // Stop any existing playback first
+      if (isPlaying) {
+        stopPlayback();
+      }
+
+      initAudioContext();
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
+      const shouldLoop = loopToggle.checked;
+
+      // Clamp offset to valid range for processed buffer
+      const maxDuration = processedBuffer.duration;
+      startOffset = Math.max(0, Math.min(startOffset, maxDuration - 0.01));
+
+      // Create gain nodes for A/B switching
+      originalGain = audioContext.createGain();
+      processedGain = audioContext.createGain();
+
+      // Set initial gains based on current mode
+      originalGain.gain.value = isPlayingOriginal ? 1 : 0;
+      processedGain.gain.value = isPlayingOriginal ? 0 : 1;
+
+      // Create and start original source
+      originalSource = audioContext.createBufferSource();
+      originalSource.buffer = originalBuffer;
+      originalSource.loop = shouldLoop;
+      originalSource.connect(originalGain);
+      originalGain.connect(audioContext.destination);
+
+      // Create and start processed source (no real-time effects - all baked in)
+      processedSource = audioContext.createBufferSource();
+      processedSource.buffer = processedBuffer;
+      processedSource.loop = shouldLoop;
+      processedSource.connect(processedGain);
+      processedGain.connect(audioContext.destination);
+
+      // Start both
+      const now = audioContext.currentTime;
+      playbackStartTime = now;
+      playbackOffset = startOffset;
+
+      // Clamp original start offset too (may have different duration)
+      const origStartOffset = Math.min(startOffset, originalBuffer.duration - 0.01);
+
+      originalSource.start(now, Math.max(0, origStartOffset));
+      processedSource.start(now, startOffset);
+
+      isPlaying = true;
+      playBtn.textContent = '⏸ Pause';
+
+      // Handle end of playback (only fires if not looping)
+      processedSource.onended = () => {
+        // Only handle if we're still supposed to be playing this source
+        if (isPlaying && processedSource) {
+          isPlaying = false;
+          playbackOffset = 0;
+          playBtn.textContent = '▶ Play';
+          cleanupPlayback();
+        }
+      };
+    }
+
+    function stopPlayback() {
+      if (!isPlaying) return;
+
+      // Save position before stopping
+      playbackOffset = getCurrentPlaybackPosition();
+      isPlaying = false;
+
+      // Clear handlers before stopping to prevent callbacks
+      if (originalSource) {
+        originalSource.onended = null;
+        try { originalSource.stop(); } catch(e) {}
+      }
+      if (processedSource) {
+        processedSource.onended = null;
+        try { processedSource.stop(); } catch(e) {}
+      }
+
+      cleanupPlayback();
+      playBtn.textContent = '▶ Play';
+    }
+
+    function cleanupPlayback() {
+      originalSource = null;
+      processedSource = null;
+      originalGain = null;
+      processedGain = null;
+    }
+
+    // Download as WAV - all processing is already baked in
+    downloadBtn.addEventListener('click', async () => {
+      if (!processedBuffer) return;
+
+      showStatus('Preparing download...', 'processing');
+
+      const downloadName = generateDownloadName(originalFileName);
+      downloadWav(processedBuffer, downloadName);
+
+      showStatus('Download complete!', 'success');
+      setTimeout(() => hideStatus(), 1500);
+    });
+
+    // Convert AudioBuffer to WAV
+    function audioBufferToWav(buffer) {
+      const numChannels = buffer.numberOfChannels;
+      const sampleRate = buffer.sampleRate;
+      const format = 1; // PCM
+      const bitDepth = 16;
+
+      const bytesPerSample = bitDepth / 8;
+      const blockAlign = numChannels * bytesPerSample;
+
+      const samples = buffer.length;
+      const dataSize = samples * blockAlign;
+      const bufferSize = 44 + dataSize;
+
+      const arrayBuffer = new ArrayBuffer(bufferSize);
+      const view = new DataView(arrayBuffer);
+
+      // WAV header
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, bufferSize - 8, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true); // fmt chunk size
+      view.setUint16(20, format, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bitDepth, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      // Audio data
+      const channels = [];
+      for (let i = 0; i < numChannels; i++) {
+        channels.push(buffer.getChannelData(i));
+      }
+
+      let offset = 44;
+      for (let i = 0; i < samples; i++) {
+        for (let ch = 0; ch < numChannels; ch++) {
+          const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+          const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+          view.setInt16(offset, intSample, true);
+          offset += 2;
+        }
+      }
+
+      return arrayBuffer;
+    }
+
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    // Status display helpers
+    function showStatus(message, type) {
+      status.className = `status visible ${type}`;
+      status.querySelector('.status-text')?.remove();
+      const span = document.createElement('span');
+      span.className = 'status-text';
+      span.textContent = message;
+      status.appendChild(span);
+    }
+
+    function hideStatus() {
+      status.classList.remove('visible');
+    }
+
+    function showProgress(current, total, text) {
+      progressContainer.classList.add('visible');
+      const percent = total > 0 ? (current / total) * 100 : 0;
+      progressFill.style.width = percent + '%';
+      progressText.textContent = text || `${current} / ${total}`;
+    }
+
+    function hideProgress() {
+      progressContainer.classList.remove('visible');
+      progressFill.style.width = '0%';
+    }
+  </script>
+</body>
 </html>
